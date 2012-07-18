@@ -1,9 +1,9 @@
 package com.mobidict.audio;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +18,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import com.mobidict.util.MBConstants;
+import com.mobidict.util.StringUtils;
 
 public class RetrieveAudio {
 	
@@ -34,14 +35,17 @@ public class RetrieveAudio {
 	
 	private void loadAllWords() throws Throwable{
 		BufferedReader bfReader = null;
-		FileReader reader = null;
+		InputStreamReader  reader = null;
 		try{
-			reader = new FileReader(new File(MBConstants.AUDIO_FOLDER + MBConstants.DEFINED_WORDS_FILE_NAME));
+			reader = new InputStreamReader(new FileInputStream(MBConstants.AUDIO_FOLDER + MBConstants.DEFINED_WORDS_FILE_NAME), "UTF-8");
 			bfReader = new BufferedReader(reader);
 			words = new ArrayList<String>();
 			String oneWord = bfReader.readLine();
 			while(null != oneWord){
-				words.add(oneWord);
+				String[] items = extractWord(oneWord);
+				if(null != items){
+					words.add(items[0].trim());
+				}
 				oneWord = bfReader.readLine();
 			}
 		} finally {
@@ -52,6 +56,24 @@ public class RetrieveAudio {
 				bfReader.close();
 			}
 		}
+	}
+	
+	/**
+	 * Extract the word from one line
+	 * 
+	 * @param line
+	 * @return
+	 */
+	private String[] extractWord(String line){
+		if(StringUtils.isEmpty(line)){
+			return null;
+		}
+		//Means it's A,B and etc.
+		if(line.length() == 1){
+			return null;
+		}
+		String[] items = line.split("/");
+		return items;
 	}
 	
 	public void retrieveAudios() throws Throwable{
@@ -68,8 +90,10 @@ public class RetrieveAudio {
 								append(MBConstants.AUDIO_SUFFIX).toString();
 		System.out.println("\t" + RETRIEVE_URL);
 		HttpGet httpget = new HttpGet(RETRIEVE_URL);
+		/** Proxy
 		HttpHost proxy = new HttpHost(MBConstants.HTTP_PROXY_SERVER, MBConstants.HTTP_PROXY_PORT);
 		httpget.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+		End of Proxy */
 		HttpResponse response = httpclient.execute(httpget);
 		StatusLine status = response.getStatusLine();
 		System.out.println(status.getStatusCode());
